@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}À propos · Formini{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold text-primary"><i class="bi bi-info-circle-fill"></i> À propos du modèle</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">🎯 Objectif Business</h5></div>
+            <div class="card-body">
+                <p>Personnaliser l'accompagnement pédagogique en identifiant des
+                <strong>groupes d'étudiants aux comportements similaires</strong>
+                afin d'adapter les interventions.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white"><h5 class="mb-0">🧠 Approche Data Science</h5></div>
+            <div class="card-body">
+                <p><strong>K-Means</strong> (k=4) appliqué sur 8 features comportementales,
+                après normalisation StandardScaler, sur <strong>100 000 apprenants</strong>
+                de la plateforme Formini.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Métriques -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-speedometer2"></i> Performance du modèle</h5></div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h6 class="text-muted">Silhouette Score</h6>
+                <h3 class="text-primary">{{ "%.4f"|format(metrics.silhouette) }}</h3>
+                <small class="text-muted">↑ proche de 1 = mieux</small>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">Davies-Bouldin</h6>
+                <h3 class="text-danger">{{ "%.4f"|format(metrics.davies_bouldin) }}</h3>
+                <small class="text-muted">↓ proche de 0 = mieux</small>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">Calinski-Harabasz</h6>
+                <h3 class="text-success">{{ "%.0f"|format(metrics.calinski_harabasz) }}</h3>
+                <small class="text-muted">↑ plus haut = mieux</small>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">Inertie (WCSS)</h6>
+                <h3 class="text-warning">{{ "{:,.0f}".format(metrics.inertia) }}</h3>
+                <small class="text-muted">Optimisée à k=4</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-list-check"></i> Features comportementales utilisées</h5></div>
+    <div class="card-body">
+        <div class="row">
+            {% for f in features %}
+            <div class="col-md-6 mb-2">
+                <code class="bg-light p-2 d-block rounded">{{ f }}</code>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Profils -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-people-fill"></i> Profils identifiés</h5></div>
+    <div class="card-body">
+        {% for cid, name in cluster_names.items() %}
+        <div class="border-start border-4 ps-3 mb-3" style="border-color: {{ cluster_colors[cid] }} !important;">
+            <h6 style="color: {{ cluster_colors[cid] }};" class="fw-bold">{{ name }}</h6>
+            <p class="mb-0">{{ cluster_descriptions[cid] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Pipeline -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-diagram-3"></i> Pipeline de prédiction</h5></div>
+    <div class="card-body">
+<pre class="bg-dark text-light p-3 rounded"><code>Données apprenant
+   ↓
+StandardScaler.transform()      ← scaler entraîné
+   ↓
+KMeans.predict()                ← modèle entraîné
+   ↓
+Cluster ID → Nom Business → Recommandations</code></pre>
+    </div>
+</div>
+
+<!-- API -->
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="bi bi-code-slash"></i> API REST disponible</h5></div>
+    <div class="card-body">
+        <p>L'app expose un endpoint JSON pour intégration externe :</p>
+<pre class="bg-light p-3 rounded"><code>POST /api/predict
+Content-Type: application/json
+
+{
+  "Quiz_Score_Avg": 75,
+  "Progress_Percentage": 60,
+  "Time_Spent_Hours": 5,
+  "Average_Session_Duration_Min": 35,
+  "Login_Frequency": 5,
+  "Video_Completion_Rate": 70,
+  "Assignments_Submitted": 6,
+  "Discussion_Participation": 3
+}</code></pre>
+        <p class="mb-0 text-muted"><small>Réponse : <code>{"ok": true, "result": {...}}</code></small></p>
+    </div>
+</div>
+
+{% endblock %}

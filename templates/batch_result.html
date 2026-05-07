@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Résultats segmentation · Formini{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2 class="fw-bold text-primary"><i class="bi bi-check-circle-fill text-success"></i> Segmentation terminée</h2>
+        <div>
+            <a href="{{ url_for('batch') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Nouveau lot
+            </a>
+            <a href="{{ url_for('download') }}" class="btn btn-success">
+                <i class="bi bi-download"></i> Télécharger le CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-success">
+    <strong>{{ "{:,}".format(total) }} apprenants</strong> ont été segmentés avec succès.
+</div>
+
+<!-- Distribution -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-pie-chart-fill"></i> Répartition par profil</h5></div>
+            <div class="card-body"><canvas id="distChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-table"></i> Détail par profil</h5></div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>Profil</th><th class="text-end">Apprenants</th><th class="text-end">%</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for d in distribution %}
+                        <tr>
+                            <td><span class="badge" style="background-color: {{ d.color }}; font-size: 0.9em;">{{ d.name }}</span></td>
+                            <td class="text-end fw-bold">{{ "{:,}".format(d.count) }}</td>
+                            <td class="text-end">{{ d.pct }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aperçu des données -->
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-eye"></i> Aperçu des résultats (50 premières lignes)</h5>
+    </div>
+    <div class="card-body p-0" style="max-height: 500px; overflow: auto;">
+        {{ preview|safe }}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const distData = {{ distribution|tojson }};
+
+new Chart(document.getElementById('distChart'), {
+    type: 'doughnut',
+    data: {
+        labels: distData.map(d => d.name),
+        datasets: [{
+            data: distData.map(d => d.count),
+            backgroundColor: distData.map(d => d.color),
+            borderColor: '#ffffff',
+            borderWidth: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => {
+                        const d = distData[ctx.dataIndex];
+                        return ` ${d.name} : ${d.count.toLocaleString()} (${d.pct}%)`;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

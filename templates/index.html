@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Prédire un apprenant · Formini{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="p-4 rounded-3" style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe);">
+            <h1 class="fw-bold text-primary mb-2">
+                <i class="bi bi-graph-up-arrow"></i> Segmentation des Apprenants
+            </h1>
+            <p class="lead mb-0">
+                Outil d'aide à la décision pour conseillers pédagogiques —
+                saisis les métriques d'engagement d'un apprenant et obtiens son
+                <strong>profil business</strong> ainsi que les
+                <strong>actions recommandées</strong>.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Métriques modèle -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-rulers text-primary" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Silhouette Score</h6>
+                <h3 class="fw-bold">{{ "%.4f"|format(metrics.silhouette) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-down text-danger" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Davies-Bouldin</h6>
+                <h3 class="fw-bold">{{ "%.4f"|format(metrics.davies_bouldin) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-people-fill text-success" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Clusters</h6>
+                <h3 class="fw-bold">{{ cluster_names|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-cpu text-warning" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Algorithme</h6>
+                <h3 class="fw-bold">K-Means</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulaire à gauche -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Saisir les métriques</h5>
+            </div>
+            <div class="card-body">
+                <form id="predictForm">
+
+                    <!-- Section Performance -->
+                    <h6 class="text-primary mt-2"><i class="bi bi-trophy"></i> Performance</h6>
+
+                    <label class="form-label mt-2">Score moyen aux quiz : <span id="quiz_score_val" class="badge bg-secondary">70</span></label>
+                    <input type="range" class="form-range" name="quiz_score" id="quiz_score" min="0" max="100" step="0.5" value="70">
+
+                    <label class="form-label mt-2">Pourcentage de progression (%) : <span id="progress_val" class="badge bg-secondary">50</span></label>
+                    <input type="range" class="form-range" name="progress" id="progress" min="0" max="100" step="1" value="50">
+
+                    <label class="form-label mt-2">Taux de visionnage vidéo (%) : <span id="video_val" class="badge bg-secondary">60</span></label>
+                    <input type="range" class="form-range" name="video" id="video" min="0" max="100" step="1" value="60">
+
+                    <label class="form-label mt-2">Devoirs rendus : <span id="assignments_val" class="badge bg-secondary">5</span></label>
+                    <input type="range" class="form-range" name="assignments" id="assignments" min="0" max="10" step="1" value="5">
+
+                    <hr class="my-3">
+
+                    <!-- Section Activité -->
+                    <h6 class="text-primary"><i class="bi bi-clock-history"></i> Activité &amp; Régularité</h6>
+
+                    <label class="form-label mt-2">Temps passé total (heures) : <span id="time_spent_val" class="badge bg-secondary">4</span></label>
+                    <input type="range" class="form-range" name="time_spent" id="time_spent" min="0" max="30" step="0.5" value="4">
+
+                    <label class="form-label mt-2">Durée moyenne d'une session (min) : <span id="session_dur_val" class="badge bg-secondary">30</span></label>
+                    <input type="range" class="form-range" name="session_dur" id="session_dur" min="0" max="120" step="5" value="30">
+
+                    <label class="form-label mt-2">Fréquence de connexion (par semaine) : <span id="login_freq_val" class="badge bg-secondary">5</span></label>
+                    <input type="range" class="form-range" name="login_freq" id="login_freq" min="0" max="15" step="1" value="5">
+
+                    <label class="form-label mt-2">Participations aux discussions : <span id="discussion_val" class="badge bg-secondary">2</span></label>
+                    <input type="range" class="form-range" name="discussion" id="discussion" min="0" max="15" step="1" value="2">
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">
+                        <i class="bi bi-rocket-takeoff"></i> Prédire le profil
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Résultat à droite -->
+    <div class="col-lg-6">
+        <div id="resultPlaceholder" class="card shadow-sm">
+            <div class="card-body text-center py-5 text-muted">
+                <i class="bi bi-arrow-left-circle" style="font-size: 4rem;"></i>
+                <h5 class="mt-3">Saisis les métriques et clique sur "Prédire le profil"</h5>
+                <p>Le résultat s'affichera ici.</p>
+            </div>
+        </div>
+
+        <div id="resultBox" style="display:none;">
+            <!-- Résultat principal -->
+            <div id="resultCard" class="card shadow-sm mb-3"></div>
+
+            <!-- Bar chart proximité -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><h6 class="mb-0"><i class="bi bi-bar-chart-fill"></i> Proximité avec chaque profil</h6></div>
+                <div class="card-body"><canvas id="proxChart" height="180"></canvas></div>
+            </div>
+
+            <!-- Recommandations -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white"><h6 class="mb-0"><i class="bi bi-lightbulb-fill"></i> Actions Pédagogiques Recommandées</h6></div>
+                <div class="card-body"><ul id="recoList" class="mb-0"></ul></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Live update des sliders
+const sliders = ['quiz_score', 'progress', 'video', 'assignments',
+                 'time_spent', 'session_dur', 'login_freq', 'discussion'];
+sliders.forEach(id => {
+    const sl = document.getElementById(id);
+    const out = document.getElementById(id + '_val');
+    sl.addEventListener('input', () => out.textContent = sl.value);
+});
+
+let proxChart = null;
+
+document.getElementById('predictForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Prédiction...';
+
+    try {
+        const resp = await fetch('/predict', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        if (!data.ok) { alert('Erreur : ' + data.error); return; }
+        renderResult(data.result);
+    } catch (err) {
+        alert('Erreur réseau : ' + err);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-rocket-takeoff"></i> Prédire le profil';
+    }
+});
+
+function renderResult(r) {
+    document.getElementById('resultPlaceholder').style.display = 'none';
+    document.getElementById('resultBox').style.display = 'block';
+
+    // Card principale
+    document.getElementById('resultCard').innerHTML = `
+        <div class="card-body text-center" style="background-color: ${r.color}15; border-left: 6px solid ${r.color};">
+            <h2 style="color: ${r.color};" class="fw-bold mb-3">${r.cluster_name}</h2>
+            <p class="lead mb-0">${r.description}</p>
+        </div>`;
+
+    // Bar chart proximité
+    if (proxChart) proxChart.destroy();
+    const ctx = document.getElementById('proxChart').getContext('2d');
+    proxChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: r.proximities.map(p => p.name),
+            datasets: [{
+                label: 'Proximité (%)',
+                data: r.proximities.map(p => p.value),
+                backgroundColor: r.proximities.map(p => p.color + 'CC'),
+                borderColor: r.proximities.map(p => p.color),
+                borderWidth: 2
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+        }
+    });
+
+    // Recommandations
+    document.getElementById('recoList').innerHTML =
+        r.recommendations.map(reco => `<li class="mb-2">${reco}</li>`).join('');
+
+    // Scroll fluide vers le résultat
+    document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Formini · Segmentation Apprenants{% endblock %}</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+            <i class="bi bi-mortarboard-fill me-2"></i>Formini
+            <span class="badge bg-light text-primary ms-2">ML</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">
+                        <i class="bi bi-person-fill"></i> Prédire un apprenant
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('batch') }}">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Prédire un lot
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('about') }}">
+                        <i class="bi bi-info-circle"></i> À propos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('history') }}">
+                        <i class="bi bi-clock-history"></i> Historique
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('admin') }}">
+                        <i class="bi bi-speedometer2"></i> Admin
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Flash messages -->
+<div class="container mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else 'info' }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<!-- Contenu principal -->
+<main class="container my-4">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="py-4 mt-5" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+    <div class="container text-center text-muted">
+        <small>
+            <i class="bi bi-code-slash"></i>
+            Projet ML SAE2 · BinaryLords · 2025-2026 · K-Means Segmentation des Apprenants
+        </small>
+    </div>
+</footer>
+
+<!-- Bootstrap JS + Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

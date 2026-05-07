@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Admin · Formini{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold text-primary"><i class="bi bi-speedometer2"></i> Tableau de bord</h2>
+        <p class="text-muted">Statistiques MySQL pour les predictions et les batchs.</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-collection text-primary" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Predictions</h6>
+                <h3 class="fw-bold">{{ totals.predictions }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-upload text-success" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Batchs</h6>
+                <h3 class="fw-bold">{{ totals.batches }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-clock text-warning" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">Dernier batch</h6>
+                {% if last_batch %}
+                    <div class="fw-bold">#{{ last_batch.id }}</div>
+                    <small class="text-muted">{{ last_batch.original_filename }}</small>
+                    <div class="text-muted">{{ last_batch.created_at }}</div>
+                {% else %}
+                    <div class="text-muted">Aucun batch</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100 mb-3">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-bar-chart"></i> Repartition globale (chart)</h5></div>
+            <div class="card-body"><canvas id="overallChart" height="180"></canvas></div>
+        </div>
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-pie-chart-fill"></i> Repartition globale</h5></div>
+            <div class="card-body">
+                <table class="table mb-0">
+                    <thead>
+                        <tr><th>Profil</th><th class="text-end">Count</th></tr>
+                    </thead>
+                    <tbody>
+                        {% if overall_counts %}
+                            {% for row in overall_counts %}
+                            <tr>
+                                <td>
+                                    <span class="badge" style="background-color: {{ cluster_color_by_name.get(row.cluster_name, '#64748b') }};">
+                                        {{ row.cluster_name }}
+                                    </span>
+                                </td>
+                                <td class="text-end fw-bold">{{ row.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="2" class="text-center text-muted">Aucune donnee.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100 mb-3">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-graph-up"></i> Tendances (30 derniers jours)</h5></div>
+            <div class="card-body"><canvas id="trendChart" height="180"></canvas></div>
+        </div>
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-list-check"></i> Dernier batch</h5></div>
+            <div class="card-body">
+                {% if last_batch %}
+                    <div class="mb-2 text-muted">{{ last_batch.total_rows }} lignes</div>
+                    <table class="table mb-0">
+                        <thead>
+                            <tr><th>Profil</th><th class="text-end">Count</th></tr>
+                        </thead>
+                        <tbody>
+                            {% if last_batch_counts %}
+                                {% for row in last_batch_counts %}
+                                <tr>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ cluster_color_by_name.get(row.cluster_name, '#64748b') }};">
+                                            {{ row.cluster_name }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-bold">{{ row.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="2" class="text-center text-muted">Aucune donnee.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="text-muted">Aucun batch disponible.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const overallCounts = {{ overall_counts|tojson }};
+const colorMap = {{ cluster_color_by_name|tojson }};
+const trendLabels = {{ trend_labels|tojson }};
+const trendValues = {{ trend_values|tojson }};
+
+if (overallCounts.length) {
+    const labels = overallCounts.map(r => r.cluster_name);
+    const values = overallCounts.map(r => r.count);
+    const colors = labels.map(n => colorMap[n] || '#64748b');
+
+    new Chart(document.getElementById('overallChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Count',
+                data: values,
+                backgroundColor: colors.map(c => c + 'CC'),
+                borderColor: colors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+if (trendLabels.length) {
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: 'Predictions',
+                data: trendValues,
+                borderColor: '#1e40af',
+                backgroundColor: 'rgba(30, 64, 175, 0.15)',
+                tension: 0.2,
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+</script>
+{% endblock %}
