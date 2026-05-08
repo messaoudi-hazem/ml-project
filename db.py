@@ -1,4 +1,5 @@
 import os
+import base64
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 from sqlalchemy import (
@@ -30,10 +31,33 @@ def _get_db_url():
     return f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}?charset=utf8mb4"
 
 
+def _write_ca_file_from_env():
+    ca_content = os.getenv("DB_SSL_CA_CONTENT", "").strip()
+    if not ca_content:
+        ca_b64 = os.getenv("DB_SSL_CA_BASE64", "").strip()
+        if ca_b64:
+            try:
+                ca_content = base64.b64decode(ca_b64).decode("utf-8", errors="ignore")
+            except Exception:
+                ca_content = ""
+    if not ca_content:
+        return ""
+
+    ca_path = os.path.join("/tmp", "aiven-ca.pem")
+    try:
+        with open(ca_path, "w", encoding="utf-8") as f:
+            f.write(ca_content)
+        return ca_path
+    except Exception:
+        return ""
+
+
 def _get_ssl_options():
     mode = os.getenv("DB_SSL", "").strip().lower()
     if mode in {"1", "true", "required", "verify-ca", "verify-full"}:
         ca_path = os.getenv("DB_SSL_CA", "").strip()
+        if not ca_path:
+            ca_path = _write_ca_file_from_env()
         if ca_path:
             return {"ca": ca_path}
         return {}
