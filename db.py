@@ -30,8 +30,25 @@ def _get_db_url():
     return f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}?charset=utf8mb4"
 
 
+def _get_ssl_options():
+    mode = os.getenv("DB_SSL", "").strip().lower()
+    if mode in {"1", "true", "required", "verify-ca", "verify-full"}:
+        ca_path = os.getenv("DB_SSL_CA", "").strip()
+        if ca_path:
+            return {"ca": ca_path}
+        return {}
+    return None
+
+
 def get_engine():
-    return create_engine(_get_db_url(), pool_pre_ping=True, future=True)
+    ssl_options = _get_ssl_options()
+    connect_args = {"ssl": ssl_options} if ssl_options is not None else {}
+    return create_engine(
+        _get_db_url(),
+        pool_pre_ping=True,
+        future=True,
+        connect_args=connect_args,
+    )
 
 
 metadata = MetaData()
